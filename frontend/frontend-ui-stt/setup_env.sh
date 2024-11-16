@@ -11,7 +11,7 @@ npm install
 
 # Create .env.local in current directory
 cat > .env.local << EOL
-NEXT_PUBLIC_API_ENDPOINT=http://localhost:8020
+NEXT_PUBLIC_API_ENDPOINT=http://127.0.0.1:8020
 EOL
 
 echo "Setup complete!"
