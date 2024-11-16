@@ -157,7 +157,7 @@ localhost:8020/docs
 
 3. Audio content is single channel and not based on dual channel(e.g., Call center recordings, YouTube clips) which might require more preprocessing steps (e.g., downmixing, channel separation)
 
-4. This setup is intended only for prototyping, to test the accuracy and speed of different Whisper models (such as Whisper Tiny, Base, etc.). It is not meant for production use, and as such, the testing will focus on evaluating how the model performs in terms of transcription quality and inference time.
+4. This setup is intended only for prototyping, to test the accuracy and speed of different Whisper models (such as Whisper Tiny, Base, etc.). It is not meant for production use, and as such, the testing will focus on evaluating how the model performs in terms of transcription quality and inference time. Do not upload audio file that is longer than 30 seconds.
 
 5. There is a limited number of API requests available due to Hugging Face's rate limiting and possibly restricted quotas. In addition, there are restrictions on audio clip duration and file size, with Hugging Face's API typically allowing up to 100MB per file and duration constraints based on the file type and size. For large audio files, splitting them into smaller segments may be necessary.
 

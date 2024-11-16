@@ -74,31 +74,25 @@ class AudioService:
         Convert audio to WAV format if not already WAV. Lossless file format preserve more audio details which is needed for an accurate transcription.
         """
         
-        audio_content.seek(0) # BytesIO to start from the starting byte
+        audio_content.seek(0)  # Reset BytesIO position
         
-        ## Verify that file is .wav format first before continuing
-        if 'wav' in audio_format:       
-            try:
+        try:
+            # Check if input is WAV format
+            if audio_format == 'wav':
+                logger.debug("Input is already in WAV format")
                 audio = AudioSegment.from_wav(audio_content)
-            except Exception as e:
-                error_message = f"Failed to read WAV format: {str(e)}"
-                logger.error(error_message)
-                raise HTTPException(status_code=400, detail=error_message)
-        else:
-            logger.debug("Converting input audio to WAV format")
-            audio_content.seek(0)
-            try:
-                audio = AudioSegment.from_file(audio_content)
-                wav_buffer = BytesIO()
-                audio.export(wav_buffer, format="wav")
-                wav_buffer.seek(0)
-                audio = AudioSegment.from_wav(wav_buffer)
-                logger.debug("Audio file converted to WAV format")
-                return audio
-            except Exception as e:
-                error_message = f"Failed to convert audio to WAV format: {str(e)}"
-                logger.error(error_message)
-                raise HTTPException(status_code=400, detail=error_message)
+            else:
+                # Convert non-WAV format to WAV
+                logger.debug(f"Converting {audio_format} to WAV format")
+                audio = AudioSegment.from_file(audio_content, format=audio_format)
+                logger.info("Audio file converted to WAV format")
+                
+            return audio
+            
+        except Exception as e:
+            error_message = f"Failed to process audio: {str(e)}"
+            logger.error(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
             
             
     def convert_to_mono(self, audio: AudioSegment):
@@ -106,41 +100,67 @@ class AudioService:
         Convert audio to mono if it has multiple channels. Since Whisper is trained on mono audio, it reduces overall transcription error by transcribing a mono format audio.
         """
         
-        if audio.channels > 1:
-            logger.info(f"Multichannel audio detected, {audio.channels} audio")
-            try:
+        if audio is None:
+            error_message = "Audio input is None. Please ensure audio file was properly loaded."
+            logger.error(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
+            
+        try:
+            channels = audio.channels
+            
+            if channels > 1:
+                logger.info(f"Converting {channels} channels to mono")
                 audio = audio.set_channels(1)
-                logger.debug(f"Audio converted to {audio.channels} audio")
-                return audio
-            except Exception as e:
-                error_message = f"Error in audio channel conversion: {str(e)}"
-                logger.error(error_message)
-                raise HTTPException(status_code=400, detail=error_message)
-        
-        logger.debug(f"{audio.channels} channel audio detected")
-        
-        return audio
+                logger.debug("Successfully converted to mono")
+            else:
+                logger.debug(f"Audio already in mono ({channels} channel)")
+                
+            return audio
+            
+        except AttributeError as e:
+            error_message = f"Invalid audio format - missing channels attribute: {str(e)}"
+            logger.error(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
+            
+        except Exception as e:
+            error_message = f"Error processing audio: {str(e)}"
+            logger.error(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
     
     
     def resample_audio(self, audio: AudioSegment):
         """
         Resample audio to target sample rate if needed
         """
-        if audio.frame_rate != self.target_sample_rate:
-            logger.info(f"Resampling audio from {audio.frame_rate}Hz to {self.target_sample_rate}Hz")
-            audio = audio.set_frame_rate(self.target_sample_rate)
-            logger.debug(f"Audio resampled to {self.target_sample_rate}Hz")
+        try:
+            if audio is None:
+                raise ValueError("Audio input is None")
+                
+            current_rate = audio.frame_rate
+            
+            if current_rate != self.target_sample_rate:
+                logger.info(f"Resampling audio from {current_rate}Hz to {self.target_sample_rate}Hz")
+                try:
+                    audio = audio.set_frame_rate(self.target_sample_rate)
+                    logger.debug(f"Audio successfully resampled to {self.target_sample_rate}Hz")
+                except Exception as e:
+                    raise ValueError(f"Failed to resample audio: {str(e)}")
+            else:
+                logger.debug(f"Audio already at target sample rate of {self.target_sample_rate}Hz")
+                
             return audio
-        
-        logger.info(f"Audio already at target sample rate of {self.target_sample_rate}Hz")
-        return audio
+            
+        except Exception as e:
+            error_message = f"Error in audio resampling: {str(e)}"
+            logger.error(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
 
         
     async def preprocess_audio(self, audio_format, audio_content: BytesIO):
         try:
             ## Step 1 Convert to WAV format
             audio = await self.convert_to_wav(audio_content=audio_content, audio_format=audio_format)
-            
+
             ## Step 2 Convert to mono channel
             audio = self.convert_to_mono(audio)
             
