@@ -54,7 +54,8 @@ There are two method for setting up the project locally: using the provided setu
     create /frontend-ui-stt/.env.local
 
     ```bash
-    NEXT_PUBLIC_API_ENDPOINT=http://localhost:8020
+    # Default using Ipv4, since NextJS has issue connecting directly with Ipv6 (localhost)
+    NEXT_PUBLIC_API_ENDPOINT=http://127.0.0.1:8020
     ```
 
     Note: This is the endpoint which is hosting your backend application, the backend application has to be running, please refer to
