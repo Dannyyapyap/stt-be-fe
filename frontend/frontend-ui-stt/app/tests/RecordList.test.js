@@ -12,7 +12,7 @@
  * - Handles async data loading
  */
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import RecordList from "../components/RecordList";
 import { retrieveDatabase } from "../api/getTranscriptions";
@@ -59,7 +59,10 @@ describe("RecordList Component", () => {
     // Wait for data to load and check content
     await waitFor(() => {
       expect(screen.getByText("sample.mp3")).toBeInTheDocument();
-      // Click the accordion to reveal content
+    });
+
+    // Wrap accordion click in act, click to reveal content
+    await act(async () => {
       const accordionTrigger = screen.getByText("sample.mp3");
       accordionTrigger.click();
     });
@@ -92,16 +95,16 @@ describe("RecordList Component", () => {
       expect(screen.getByText("sample2.mp3")).toBeInTheDocument();
     });
 
-    // Click the accordion to reveal content
-    const accordionTrigger = screen.getByText("sample2.mp3");
-    accordionTrigger.click();
-
-    // Check that transcription is visible
-    await waitFor(() => {
-      expect(
-        screen.getByText(/second content that is being tested goodbye/i)
-      ).toBeInTheDocument();
-      expect(screen.getByText(/Sample Rate: 41600/i)).toBeInTheDocument();
+    // Wrap accordion click in act, click to reveal content
+    await act(async () => {
+      const accordionTrigger = screen.getByText("sample2.mp3");
+      accordionTrigger.click();
     });
+
+    // Check content after accordion is opened
+    expect(
+      screen.getByText(/second content that is being tested goodbye/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Sample Rate: 41600/i)).toBeInTheDocument();
   });
 });
